@@ -9,7 +9,7 @@ module CarrierWave
       MEDIA_TYPE_REGEXP    = /[-\w.+]+\/[-\w.+]+(;[-\w.+]+=[^;,]+)*/
       BASE64_REGEXP        = /;base64/
       CONTENT_SEPARATOR    = /,/
-      DEFAULT_CONTENT_TYPE = "text/plain"
+      DEFAULT_CONTENT_TYPE = "application/octet-stream"
 
       def initialize(data_uri)
         scanner = StringScanner.new(data_uri)
@@ -18,9 +18,12 @@ module CarrierWave
         base64 = scanner.scan(BASE64_REGEXP)
         scanner.scan(CONTENT_SEPARATOR) or raise ParseError, "data URI has invalid format"
         content_type = media_type[/^[^;]+/] if media_type
-        params = media_type.split(';')[1..-1].map { |param| param.split('=') }.to_h
+        params = if media_type
+                   media_type.split(';')[1..-1].map { |param| param.split('=') }.to_h
+                 else {}
+                 end
 
-        @type = content_type
+        @type = content_type || DEFAULT_CONTENT_TYPE
         @extension = @type.split('/')[1]
         @data = Base64.decode64(scanner.post_match)
         @original_filename = params['name']
